@@ -1,13 +1,19 @@
 package z.hobin.ylive;
 
 import android.text.TextUtils;
+import android.webkit.ValueCallback;
+import android.webkit.WebView;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,6 +21,9 @@ import java.util.regex.Pattern;
 import z.hobin.ylive.util.HttpUtils;
 
 public class Huya {
+    private JSONObject data;
+    private List<StreamInfo> streamInfoList;
+
 
     public static String getStreamLive(String url) {
         String html = HttpUtils.sendGet(url, null);
@@ -29,7 +38,7 @@ public class Huya {
             String text = element.html();
             if (text.contains("TT_ROOM_DATA ")) {
                 channel = match("\"channel\":\"*(\\d+)\"*", text, 0);
-                sid = match("\"sid\":\"*(\\d+)\"*", text, 0);
+                sid = match("\"sid\":\"*(\\d+){10}\"*", text, 0);
                 channel = channel.replaceAll("\"", "");
                 sid = sid.replaceAll("\"", "");
 
@@ -91,5 +100,50 @@ public class Huya {
             result = matcher.group(count);
         }
         return result;
+    }
+
+    public void load(WebView web, ValueCallback<String> valueCallback) {
+        web.evaluateJavascript("hyPlayerConfig", valueCallback);
+    }
+
+    public List<StreamInfo> getMultiStreamInfo(String data) {
+        List<StreamInfo> streamInfoList = new ArrayList<>();
+        try {
+            JSONObject json = new JSONObject(data);
+            JSONObject stream = json.getJSONObject("stream");
+            JSONArray vMultiStreamInfo = stream.getJSONArray("vMultiStreamInfo");
+            for (int i = 0; i < vMultiStreamInfo.length(); i++) {
+                JSONObject item = vMultiStreamInfo.getJSONObject(i);
+                StreamInfo streamInfo = new StreamInfo();
+                streamInfo.name = item.getString("sDisplayName");
+                streamInfo.rate = item.getInt("iBitRate");
+                streamInfoList.add(streamInfo);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return streamInfoList;
+    }
+
+    public List<LineInfo> getMultiLineInfo(String data) {
+        List<LineInfo> streamInfoList = new ArrayList<>();
+        try {
+            JSONObject json = new JSONObject(data);
+            JSONObject stream = json.getJSONObject("stream");
+            JSONArray gameStreamInfoList = stream.getJSONArray("data").getJSONObject(0).getJSONArray("gameStreamInfoList");
+            for (int i = 0; i < gameStreamInfoList.length(); i++) {
+                JSONObject item = gameStreamInfoList.getJSONObject(i);
+                LineInfo lineInfo = new LineInfo();
+                lineInfo.data = item;
+                lineInfo.title = "线路"+item.getInt("iLineIndex");
+                lineInfo.url = item.getString("sFlvUrl")+"/"+item.getString("sStreamName")+".flv?"+item.getString("sFlvAntiCode");
+                streamInfoList.add(lineInfo);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return streamInfoList;
     }
 }

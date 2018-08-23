@@ -179,9 +179,9 @@ public class TabFragment extends Fragment implements OnItemClickListener {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            String roomName = null;
+            String introduction = null;
             try {
-                roomName = itemData.getString("roomName");
+                introduction = itemData.getString("introduction");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -193,7 +193,7 @@ public class TabFragment extends Fragment implements OnItemClickListener {
             }
 
             Picasso.get().load(screenshot).into(holder.card_screen);
-            holder.card_title.setText(roomName);
+            holder.card_title.setText(introduction);
             holder.card_user.setText(nick);
             holder.itemView.setTag(itemData);
 

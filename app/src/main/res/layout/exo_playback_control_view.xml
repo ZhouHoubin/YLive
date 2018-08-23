@@ -24,9 +24,9 @@
         android:id="@+id/exo_refersh"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
+        android:layout_marginStart="20dp"
         android:text="刷新" />
 
 
@@ -45,11 +45,19 @@
             android:text="线路" />
 
         <Button
+            android:id="@+id/exo_rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:text="画质" />
+
+        <Button
             android:id="@+id/exo_full"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="20dp"
-            android:text="全屏" />
+            android:text="全屏"
+            android:visibility="gone" />
     </LinearLayout>
 
 </RelativeLayout>

@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
             JSONArray jsonArray = new JSONArray(rawData);
 
             List<TabFragment> fragments = new ArrayList<>();
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject jsonObject = null;
                 try {
                     jsonObject = jsonArray.getJSONObject(i);

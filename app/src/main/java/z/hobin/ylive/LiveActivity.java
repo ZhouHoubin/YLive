@@ -6,26 +6,33 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.webkit.ValueCallback;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.LoadControl;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
 import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
@@ -37,36 +44,40 @@ import com.google.android.exoplayer2.util.Util;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import z.hobin.ylive.util.ScreenSwitchUtils;
 import z.hobin.ylive.util.WindowUtil;
 
-public class LiveActivity extends AppCompatActivity {
+public class LiveActivity extends AppCompatActivity implements View.OnClickListener {
     private ScreenSwitchUtils instance;
     private JSONObject json;
+    //房间ID
     private String roomId = null;
-    private int streamLine = 0;
-
-
-    private Handler handler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-
-        }
-    };
+    //房间地址
+    private String roomUrl = null;
+    //画质
+    private int rateIndex = 1;
+    //线路
+    private int lineIndex = 0;
     private ExtractorsFactory extractorsFactory;
     private DataSource.Factory dataSourceFactory;
     private ExoPlayer player;
     private SimpleExoPlayerView videoView;
     private View liveInfo;
+    private WebView liveWeb;
+    private Huya huya;
+    //画质列表
+    private List<StreamInfo> multiRateInfo = new ArrayList<>();
+    //线路列表
+    private List<LineInfo> multiLineInfo = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
 
         setContentView(R.layout.activity_live);
 
@@ -104,94 +115,174 @@ public class LiveActivity extends AppCompatActivity {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            new Thread() {
-                @Override
-                public void run() {
-                    super.run();
-                    load(json);
-                }
-            }.start();
         }
 
-        String[] urls = new String[]{
-                "http://ws4.stream.huya.com/hqlive/95431869-2562758913-11006965718867509248-34850612-10057-A-0-1.flv?wsSecret=be6d6d51a6cfa2e18f5556d84203e106&wsTime=5b7ceb61",
-                "http://ws4.stream.huya.com/hqlive/95431869-2562758913-11006965718867509248-34850612-10057-A-0-1.flv?wsSecret=2c12563c11e827e30189e9d5345bfcb5&wsTime=5b7cd5c4&ratio=2000&u=1523771614&t=100&sv=1808220954",
-                "http://ws4.stream.huya.com/hqlive/95431869-2562758913-11006965718867509248-34850612-10057-A-0-1.flv?wsSecret=2c12563c11e827e30189e9d5345bfcb5&wsTime=5b7cd5c4&ratio=1200&u=1523771614&t=100&sv=1808220954",
-                "http://ws4.stream.huya.com/hqlive/95431869-2562758913-11006965718867509248-34850612-10057-A-0-1.flv?wsSecret=2c12563c11e827e30189e9d5345bfcb5&wsTime=5b7cd5c4&ratio=500&u=1523771614&t=100&sv=1808220954"};
-        String[] names = new String[]{"蓝光", "超清", "高清", "流畅"};
+        liveWeb = findViewById(R.id.live_web);
+        WebSettings webSettings = liveWeb.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setAppCacheEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
 
-        videoView.findViewById(R.id.exo_refersh).setOnClickListener(new View.OnClickListener() {
+        liveWeb.setWebViewClient(new WebViewClient());
+        liveWeb.setWebChromeClient(new WebChromeClient());
+        try {
+            roomId = json.getString("profileRoom");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        roomUrl = "http://www.huya.com/" + roomId;
+        huya = new Huya();
+        liveWeb.loadUrl(roomUrl);
+
+        videoView.findViewById(R.id.exo_refersh).setOnClickListener(this);
+        videoView.findViewById(R.id.exo_full).setOnClickListener(this);
+        videoView.findViewById(R.id.exo_rate).setOnClickListener(this);
+        videoView.findViewById(R.id.exo_line).setOnClickListener(this);
+        player.addListener(new ExoPlayer.EventListener() {
             @Override
-            public void onClick(View v) {
-                new Thread() {
-                    @Override
-                    public void run() {
-                        super.run();
-                        load(json);
-                    }
-                }.start();
+            public void onTimelineChanged(Timeline timeline, Object manifest) {
+                System.out.println("LiveActivity.onTimelineChanged");
+            }
+
+            @Override
+            public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {
+                System.out.println("LiveActivity.onTracksChanged");
+            }
+
+            @Override
+            public void onLoadingChanged(boolean isLoading) {
+                System.out.println("LiveActivity.onLoadingChanged");
+            }
+
+            @Override
+            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                System.out.println("LiveActivity.onPlayerStateChanged");
+            }
+
+            @Override
+            public void onPlayerError(ExoPlaybackException error) {
+                System.out.println("LiveActivity.onPlayerError");
+                Toast.makeText(LiveActivity.this, "播放错误，请切换线路或者修改画质", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onPositionDiscontinuity() {
+                System.out.println("LiveActivity.onPositionDiscontinuity");
             }
         });
+    }
 
-        videoView.findViewById(R.id.exo_full).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (instance.isPortrait()) {
-                    instance.toggleScreen();
-                } else {
-                    instance.toggleScreen();
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.exo_line:
+                AlertDialog.Builder lineBuilder = new AlertDialog.Builder(LiveActivity.this);
+                CharSequence[] lineItems = new CharSequence[multiLineInfo.size()];
+                for (int i = 0; i < multiLineInfo.size(); i++) {
+                    LineInfo lineInfo = multiLineInfo.get(i);
+                    lineItems[i] = lineInfo.title;
                 }
-
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
-            }
-        });
-
-        videoView.findViewById(R.id.exo_line).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(LiveActivity.this);
-                CharSequence[] items = new CharSequence[]{"蓝光", "超清", "高清", "流畅"};
-                builder.setSingleChoiceItems(items, streamLine, new DialogInterface.OnClickListener() {
+                lineBuilder.setSingleChoiceItems(lineItems, lineIndex, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         new Thread() {
                             @Override
                             public void run() {
                                 super.run();
-                                String url = Huya.getStreamLive("http://www.huya.com/" + roomId);
-                                switch (which) {
-                                    case 0:
-                                        break;
-                                    case 1:
-                                        url += "&ratio=2000&u=1523771614&t=100&sv=1808220954";
-                                        break;
-                                    case 2:
-                                        url += "&ratio=1200&u=1523771614&t=100&sv=1808220954";
-                                        break;
-                                    case 3:
-                                        url += "&ratio=500&u=1523771614&t=100&sv=1808220954";
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                streamLine = which;
-                                String finalUrl = url;
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        MediaSource videoSource = new ExtractorMediaSource(Uri.parse(finalUrl), dataSourceFactory, extractorsFactory, null, null);
-                                        player.prepare(videoSource);
-                                        player.setPlayWhenReady(true);
-                                    }
-                                });
+                                lineIndex = which;
+                                play(lineIndex, rateIndex);
+                            }
+                        }.start();
+                        dialog.dismiss();
+                    }
+                });
+                lineBuilder.show();
+                break;
+            case R.id.exo_rate:
+                AlertDialog.Builder builder = new AlertDialog.Builder(LiveActivity.this);
+                CharSequence[] items = new CharSequence[multiRateInfo.size()];
+                for (int i = 0; i < multiRateInfo.size(); i++) {
+                    StreamInfo streamInfo = multiRateInfo.get(i);
+                    items[i] = streamInfo.name;
+                }
+                builder.setSingleChoiceItems(items, rateIndex, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        new Thread() {
+                            @Override
+                            public void run() {
+                                super.run();
+                                rateIndex = which;
+                                play(lineIndex, rateIndex);
                             }
                         }.start();
                         dialog.dismiss();
                     }
                 });
                 builder.show();
+                break;
+            case R.id.exo_full:
+                if (instance.isPortrait()) {
+                    instance.toggleScreen();
+                } else {
+                    instance.toggleScreen();
+                }
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+                break;
+            case R.id.exo_refersh:
+                play(lineIndex, rateIndex);
+                break;
+        }
+    }
+
+    private void play(int line, int rate) {
+        String url = multiLineInfo.get(line).url;
+        if (rate != 0) {
+            url += "&ratio=" + multiRateInfo.get(rate).rate;
+        }
+        url += "&u=-1338516808&t=100&sv=1808231100";
+        System.out.println("===================\r\n" + url);
+        String finalUrl = url;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MediaSource videoSource = new ExtractorMediaSource(Uri.parse(finalUrl), dataSourceFactory, extractorsFactory, null, null);
+                player.prepare(videoSource);
+                player.setPlayWhenReady(true);
             }
         });
+    }
+
+    private ExoPlayer creteAPlayer(SimpleExoPlayerView view) {
+        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+        TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
+        DefaultTrackSelector trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+
+        LoadControl loadControl = new DefaultLoadControl();
+        SimpleExoPlayer player = ExoPlayerFactory.newSimpleInstance(getApplicationContext(), trackSelector, loadControl);
+        view.setPlayer(player);
+        return player;
+    }
+
+    private class WebChromeClient extends android.webkit.WebChromeClient {
+
+    }
+
+    private class WebViewClient extends android.webkit.WebViewClient {
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            huya.load(view, new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                    multiRateInfo = huya.getMultiStreamInfo(value);
+                    multiLineInfo = huya.getMultiLineInfo(value);
+                    play(0, 1);
+                }
+            });
+        }
     }
 
     @Override
@@ -226,33 +317,6 @@ public class LiveActivity extends AppCompatActivity {
         instance.stop();
     }
 
-    private void load(JSONObject json) {
-        try {
-            roomId = json.getString("profileRoom");
-            String url = Huya.getStreamLive("http://www.huya.com/" + roomId);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    MediaSource videoSource = new ExtractorMediaSource(Uri.parse(url), dataSourceFactory, extractorsFactory, null, null);
-                    player.prepare(videoSource);
-                    player.setPlayWhenReady(true);
-                }
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private ExoPlayer creteAPlayer(SimpleExoPlayerView view) {
-        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-        TrackSelection.Factory videoTrackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-
-        LoadControl loadControl = new DefaultLoadControl();
-        SimpleExoPlayer player = ExoPlayerFactory.newSimpleInstance(getApplicationContext(), trackSelector, loadControl);
-        view.setPlayer(player);
-        return player;
-    }
 
     @Override
     protected void onDestroy() {
