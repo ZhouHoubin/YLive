@@ -4,6 +4,8 @@ import android.text.TextUtils;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
 
+import com.google.gson.Gson;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -136,8 +138,8 @@ public class Huya {
                 JSONObject item = gameStreamInfoList.getJSONObject(i);
                 LineInfo lineInfo = new LineInfo();
                 lineInfo.data = item;
-                lineInfo.title = "线路"+item.getInt("iLineIndex");
-                lineInfo.url = item.getString("sFlvUrl")+"/"+item.getString("sStreamName")+".flv?"+item.getString("sFlvAntiCode");
+                lineInfo.title = "线路" + item.getInt("iLineIndex");
+                lineInfo.url = item.getString("sFlvUrl") + "/" + item.getString("sStreamName") + ".flv?" + item.getString("sFlvAntiCode");
                 streamInfoList.add(lineInfo);
             }
         } catch (Exception e) {
@@ -145,5 +147,17 @@ public class Huya {
         }
 
         return streamInfoList;
+    }
+
+    public HuyaLiveInfo getLiveInfo(String data) {
+        try {
+            JSONObject json = new JSONObject(data);
+            JSONObject stream = json.getJSONObject("stream");
+            JSONArray gameLiveInfo = stream.getJSONArray("data").getJSONObject(0).getJSONArray("gameLiveInfo");
+            return new Gson().fromJson(gameLiveInfo.toString(), HuyaLiveInfo.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

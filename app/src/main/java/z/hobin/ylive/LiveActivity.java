@@ -1,6 +1,7 @@
 package z.hobin.ylive;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -12,9 +13,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -40,6 +45,7 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,6 +53,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import z.hobin.ylive.util.CircleImageTransformation;
 import z.hobin.ylive.util.ScreenSwitchUtils;
 import z.hobin.ylive.util.WindowUtil;
 
@@ -57,6 +64,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     private String roomId = null;
     //房间地址
     private String roomUrl = null;
+    private String h5RoomUrl = null;
     //画质
     private int rateIndex = 1;
     //线路
@@ -67,11 +75,15 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     private SimpleExoPlayerView videoView;
     private View liveInfo;
     private WebView liveWeb;
+    private WebView liveMobileWeb;
     private Huya huya;
     //画质列表
     private List<StreamInfo> multiRateInfo = new ArrayList<>();
     //线路列表
     private List<LineInfo> multiLineInfo = new ArrayList<>();
+    //直播信息
+    private HuyaLiveInfo huyaLiveInfo = null;
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -82,8 +94,6 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_live);
 
         instance = ScreenSwitchUtils.init(this.getApplicationContext());
-
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         String data = getIntent().getStringExtra("data");
         try {
@@ -96,28 +106,35 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
         liveInfo = findViewById(R.id.live_info);
 
+        try {
+            TextView liveTitle = liveInfo.findViewById(R.id.live_title);
+            liveTitle.setText(json.getString("introduction"));
+            TextView liveUser = liveInfo.findViewById(R.id.live_user);
+            liveUser.setText(json.getString("nick"));
+            ImageView liveAvatar = liveInfo.findViewById(R.id.live_avatar);
+            Picasso.get().load(json.getString("avatar180")).transform(new CircleImageTransformation()).into(liveAvatar);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
         player = creteAPlayer(videoView);
 
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         dataSourceFactory = new DefaultDataSourceFactory(getApplicationContext(), Util.getUserAgent(getApplicationContext(), "yourApplicationName"), bandwidthMeter);
         extractorsFactory = new DefaultExtractorsFactory();
 
-        if (json == null) {
-            return;
-        } else {
-            try {
-                getSupportActionBar().setTitle(json.getString("nick"));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            try {
-                getSupportActionBar().setSubtitle(json.getString("roomName"));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-
         liveWeb = findViewById(R.id.live_web);
+        liveMobileWeb = findViewById(R.id.live_web_mobile);
+        WebSettings mobileSettings = liveMobileWeb.getSettings();
+        liveMobileWeb.setWebViewClient(new WebViewClient());
+        liveMobileWeb.setWebChromeClient(new WebChromeClient());
+
+        mobileSettings.setJavaScriptEnabled(true);
+        mobileSettings.setDatabaseEnabled(true);
+        mobileSettings.setDomStorageEnabled(true);
+        mobileSettings.setAppCacheEnabled(true);
+
+
         WebSettings webSettings = liveWeb.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDatabaseEnabled(true);
@@ -133,8 +150,11 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
         roomUrl = "http://www.huya.com/" + roomId;
+        h5RoomUrl = "http://m.huya.com/" + roomId;
         huya = new Huya();
         liveWeb.loadUrl(roomUrl);
+        liveMobileWeb.loadUrl(h5RoomUrl);
+        liveMobileWeb.setWebContentsDebuggingEnabled(true);
 
         videoView.findViewById(R.id.exo_refersh).setOnClickListener(this);
         videoView.findViewById(R.id.exo_full).setOnClickListener(this);
@@ -153,12 +173,11 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void onLoadingChanged(boolean isLoading) {
-                System.out.println("LiveActivity.onLoadingChanged");
+                System.out.println("LiveActivity.onLoadingChanged " + isLoading);
             }
 
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-                System.out.println("LiveActivity.onPlayerStateChanged");
             }
 
             @Override
@@ -172,6 +191,9 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println("LiveActivity.onPositionDiscontinuity");
             }
         });
+
+        Intent intent = new Intent(getApplicationContext(),WebActivity.class);
+        //startActivity(intent);
     }
 
     @Override
@@ -267,21 +289,41 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private class WebChromeClient extends android.webkit.WebChromeClient {
-
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+            System.out.println(consoleMessage.lineNumber() + "::" + consoleMessage.message());
+            return super.onConsoleMessage(consoleMessage);
+        }
     }
 
     private class WebViewClient extends android.webkit.WebViewClient {
+
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            huya.load(view, new ValueCallback<String>() {
-                @Override
-                public void onReceiveValue(String value) {
-                    multiRateInfo = huya.getMultiStreamInfo(value);
-                    multiLineInfo = huya.getMultiLineInfo(value);
-                    play(0, 1);
-                }
-            });
+            if (url.contains("m.huya.com")) {
+                view.evaluateJavascript("$('#chatArea').css('width','100%');$('#chatArea').css('height','100%');$('#chatArea').css('top','0');$('#chatArea').css('position','fixed');$('.huya-header').css('display','none');$('.live-wrap').css('display','none');$('.live-info-btn').css('display','none');$('#m-container').attr('style','padding-top:0;');$('#m-container > div.live_tab').css('height','0');", new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                view.setVisibility(View.VISIBLE);
+                            }
+                        }, 1000);
+                    }
+                });
+            } else {
+                huya.load(view, new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String value) {
+                        multiRateInfo = huya.getMultiStreamInfo(value);
+                        multiLineInfo = huya.getMultiLineInfo(value);
+                        huyaLiveInfo = huya.getLiveInfo(value);
+                        play(0, 1);
+                    }
+                });
+            }
         }
     }
 
@@ -328,13 +370,13 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         if (instance.isPortrait()) {
-            // 切换成竖屏
+            liveInfo.setVisibility(View.VISIBLE);
+            videoView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) getResources().getDimension(R.dimen.dp_200)));
             WindowUtil.cancelFullScreen(this);
-            videoView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         } else {
+            liveInfo.setVisibility(View.GONE);
+            videoView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
             WindowUtil.setFullScreen(this);
-            videoView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
         }
-
     }
 }

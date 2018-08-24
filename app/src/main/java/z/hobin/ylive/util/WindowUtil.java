@@ -21,7 +21,9 @@ public class WindowUtil {
      * @param activity
      */
     public static void hideActionBar(AppCompatActivity activity) {
-        activity.getSupportActionBar().hide();
+        if(activity.getSupportActionBar() != null){
+            activity.getSupportActionBar().hide();
+        }
     }
 
     /**
@@ -30,7 +32,9 @@ public class WindowUtil {
      * @param activity
      */
     public static void showActionBar(AppCompatActivity activity) {
-        activity.getSupportActionBar().show();
+        if(activity.getSupportActionBar() != null){
+            activity.getSupportActionBar().show();
+        }
     }
 
     /**
