@@ -7,16 +7,56 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dp_60"
+        android:orientation="horizontal"
+        android:padding="@dimen/dp_10"
+        android:visibility="gone">
+
+        <EditText
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/search"
+            android:hint="梦幻战歌"
+            android:padding="@dimen/dp_04" />
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="@dimen/dp_10"
+            android:layout_centerInParent="true"
+            android:gravity="center_vertical"
+            android:text="虎牙直播" />
+    </LinearLayout>
+
     <android.support.design.widget.TabLayout
         android:id="@+id/tab"
         android:layout_width="match_parent"
         android:layout_height="60dp"
+        android:background="@android:color/white"
         android:elevation="4dp" />
 
-    <android.support.v4.view.ViewPager
-        android:id="@+id/viewpager"
+
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/viewpager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <com.nightonke.boommenu.BoomMenuButton
+            android:id="@+id/bmb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            app:bmb_buttonPlaceEnum="buttonPlace_sc_9_1"
+            app:bmb_piecePlaceEnum="piecePlace_dot_9_1" />
+    </RelativeLayout>
 
 
 </LinearLayout>

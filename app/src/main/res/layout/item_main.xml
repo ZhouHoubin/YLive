@@ -22,10 +22,29 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/card_screen"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="200dp" />
+                android:layout_height="200dp">
+
+                <ImageView
+                    android:id="@+id/card_screen"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/screenshot" />
+
+                <TextView
+                    android:id="@+id/card_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/dp_20"
+                    android:layout_marginBottom="@dimen/dp_10"
+                    android:layout_alignParentEnd="true"
+                    android:layout_alignParentBottom="true"
+                    android:text="12w"
+                    android:textColor="@android:color/holo_red_light"
+                    android:textStyle="bold" />
+            </RelativeLayout>
 
             <TextView
                 android:id="@+id/card_title"
@@ -33,6 +52,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:minHeight="40dp"
+                android:text="男刀教学 电竞唐伯虎"
                 android:textColor="@android:color/black" />
 
             <View
@@ -46,6 +66,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:minHeight="40dp"
+                android:text="正恒丶奥贝"
                 android:textColor="@android:color/black" />
         </LinearLayout>
     </android.support.v7.widget.CardView>

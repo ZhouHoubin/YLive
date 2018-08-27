@@ -11,6 +11,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.webkit.ConsoleMessage;
@@ -38,7 +39,6 @@ import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -160,6 +160,16 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         videoView.findViewById(R.id.exo_full).setOnClickListener(this);
         videoView.findViewById(R.id.exo_rate).setOnClickListener(this);
         videoView.findViewById(R.id.exo_line).setOnClickListener(this);
+
+        videoView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (!instance.isPortrait()) {
+                    WindowUtil.setFullScreen(LiveActivity.this);
+                }
+                return false;
+            }
+        });
         player.addListener(new ExoPlayer.EventListener() {
             @Override
             public void onTimelineChanged(Timeline timeline, Object manifest) {
@@ -192,7 +202,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        Intent intent = new Intent(getApplicationContext(),WebActivity.class);
+        Intent intent = new Intent(getApplicationContext(), WebActivity.class);
         //startActivity(intent);
     }
 
@@ -354,9 +364,18 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if(player != null){
+            player.setPlayWhenReady(true);
+        }
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         instance.stop();
+        player.setPlayWhenReady(false);
     }
 
 

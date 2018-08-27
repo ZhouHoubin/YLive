@@ -32,6 +32,14 @@ import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+import com.nightonke.boommenu.BoomButtons.BoomButton;
+import com.nightonke.boommenu.BoomButtons.ButtonPlaceEnum;
+import com.nightonke.boommenu.BoomButtons.SimpleCircleButton;
+import com.nightonke.boommenu.BoomButtons.TextInsideCircleButton;
+import com.nightonke.boommenu.BoomMenuButton;
+import com.nightonke.boommenu.ButtonEnum;
+import com.nightonke.boommenu.OnBoomListener;
+import com.nightonke.boommenu.Piece.PiecePlaceEnum;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -75,6 +83,50 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         tableLayout.setupWithViewPager(viewPager);
+
+        BoomMenuButton bmb = (BoomMenuButton) findViewById(R.id.bmb);
+        bmb.setButtonEnum(ButtonEnum.TextInsideCircle);
+
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.huya).normalText("虎牙").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.longzhu).normalText("龙珠").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.panda).normalText("熊猫").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.quanmin).normalText("全民").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+        bmb.setOnBoomListener(new OnBoomListener() {
+            @Override
+            public void onClicked(int index, BoomButton boomButton) {
+
+            }
+
+            @Override
+            public void onBackgroundClick() {
+
+            }
+
+            @Override
+            public void onBoomWillHide() {
+
+            }
+
+            @Override
+            public void onBoomDidHide() {
+
+            }
+
+            @Override
+            public void onBoomWillShow() {
+
+            }
+
+            @Override
+            public void onBoomDidShow() {
+
+            }
+        });
     }
 
     private class TabAdapter extends FragmentPagerAdapter {

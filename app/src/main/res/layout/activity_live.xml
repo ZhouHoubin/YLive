@@ -19,6 +19,7 @@
         android:id="@+id/live_info"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@android:color/white"
         android:orientation="vertical"
         android:visibility="visible">
 
@@ -37,6 +38,8 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:elevation="2dp"
             android:minHeight="40dp"
             android:padding="5dp">
 
@@ -57,11 +60,6 @@
                 android:layout_centerVertical="true"
                 tools:text="英雄联盟官方赛事" />
         </RelativeLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:background="#F5F5F5" />
 
         <z.hobin.ylive.view.LiveWebView
             android:id="@+id/live_web_mobile"

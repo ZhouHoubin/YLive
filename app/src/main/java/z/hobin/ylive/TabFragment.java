@@ -192,9 +192,23 @@ public class TabFragment extends Fragment implements OnItemClickListener {
                 e.printStackTrace();
             }
 
+            String count = null;
+            try {
+                long totalCount = itemData.getLong("totalCount");
+                if (totalCount < 10000) {
+                    count = String.valueOf(totalCount);
+                } else {
+                    count = String.valueOf(totalCount / 10000) + " W";
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
             Picasso.get().load(screenshot).into(holder.card_screen);
             holder.card_title.setText(introduction);
             holder.card_user.setText(nick);
+            holder.card_count.setText(count);
+
             holder.itemView.setTag(itemData);
 
             if (itemClickListener != null) {
@@ -217,6 +231,7 @@ public class TabFragment extends Fragment implements OnItemClickListener {
             public ImageView card_screen;
             public TextView card_title;
             public TextView card_user;
+            public TextView card_count;
 
 
             public ViewHolder(View itemView) {
@@ -224,6 +239,7 @@ public class TabFragment extends Fragment implements OnItemClickListener {
                 card_screen = itemView.findViewById(R.id.card_screen);
                 card_title = itemView.findViewById(R.id.card_title);
                 card_user = itemView.findViewById(R.id.card_user);
+                card_count = itemView.findViewById(R.id.card_count);
             }
         }
     }
