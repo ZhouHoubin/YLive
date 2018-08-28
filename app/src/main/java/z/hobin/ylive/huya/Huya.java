@@ -1,4 +1,4 @@
-package z.hobin.ylive;
+package z.hobin.ylive.huya;
 
 import android.text.TextUtils;
 import android.webkit.ValueCallback;
@@ -7,6 +7,7 @@ import android.webkit.WebView;
 import com.google.gson.Gson;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -20,12 +21,15 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import z.hobin.ylive.BaseExtrator;
+import z.hobin.ylive.HuyaLiveInfo;
+import z.hobin.ylive.LineInfo;
+import z.hobin.ylive.RateInfo;
 import z.hobin.ylive.util.HttpUtils;
 
-public class Huya {
+public class Huya implements BaseExtrator {
     private JSONObject data;
-    private List<StreamInfo> streamInfoList;
-
+    private List<RateInfo> streamInfoList;
 
     public static String getStreamLive(String url) {
         String html = HttpUtils.sendGet(url, null);
@@ -108,15 +112,24 @@ public class Huya {
         web.evaluateJavascript("hyPlayerConfig", valueCallback);
     }
 
-    public List<StreamInfo> getMultiStreamInfo(String data) {
-        List<StreamInfo> streamInfoList = new ArrayList<>();
+    @Override
+    public void load(String value) {
         try {
-            JSONObject json = new JSONObject(data);
-            JSONObject stream = json.getJSONObject("stream");
+            data = new JSONObject(value);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public List<RateInfo> getMultiRateInfo() {
+        List<RateInfo> streamInfoList = new ArrayList<>();
+        try {
+            JSONObject stream = data.getJSONObject("stream");
             JSONArray vMultiStreamInfo = stream.getJSONArray("vMultiStreamInfo");
             for (int i = 0; i < vMultiStreamInfo.length(); i++) {
                 JSONObject item = vMultiStreamInfo.getJSONObject(i);
-                StreamInfo streamInfo = new StreamInfo();
+                RateInfo streamInfo = new RateInfo();
                 streamInfo.name = item.getString("sDisplayName");
                 streamInfo.rate = item.getInt("iBitRate");
                 streamInfoList.add(streamInfo);
@@ -128,11 +141,11 @@ public class Huya {
         return streamInfoList;
     }
 
-    public List<LineInfo> getMultiLineInfo(String data) {
+    @Override
+    public List<LineInfo> getMultiLineInfo() {
         List<LineInfo> streamInfoList = new ArrayList<>();
         try {
-            JSONObject json = new JSONObject(data);
-            JSONObject stream = json.getJSONObject("stream");
+            JSONObject stream = data.getJSONObject("stream");
             JSONArray gameStreamInfoList = stream.getJSONArray("data").getJSONObject(0).getJSONArray("gameStreamInfoList");
             for (int i = 0; i < gameStreamInfoList.length(); i++) {
                 JSONObject item = gameStreamInfoList.getJSONObject(i);
@@ -149,10 +162,10 @@ public class Huya {
         return streamInfoList;
     }
 
-    public HuyaLiveInfo getLiveInfo(String data) {
+    @Override
+    public HuyaLiveInfo getLiveInfo() {
         try {
-            JSONObject json = new JSONObject(data);
-            JSONObject stream = json.getJSONObject("stream");
+            JSONObject stream = data.getJSONObject("stream");
             JSONArray gameLiveInfo = stream.getJSONArray("data").getJSONObject(0).getJSONArray("gameLiveInfo");
             return new Gson().fromJson(gameLiveInfo.toString(), HuyaLiveInfo.class);
         } catch (Exception e) {
