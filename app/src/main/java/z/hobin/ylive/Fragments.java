@@ -6,6 +6,7 @@ import org.json.JSONObject;
 
 import z.hobin.ylive.douyu.DouYuTabFragment;
 import z.hobin.ylive.huya.HuYaTabFragment;
+import z.hobin.ylive.panda.PandaTabFragment;
 
 public class Fragments {
     public static TabFragment newInstance(JSONObject json) {
@@ -16,18 +17,19 @@ public class Fragments {
         return fragment;
     }
 
-    public static TabFragment newInstance(Category category,Live.Tag tag) {
+    public static TabFragment newInstance(Category category, Live.Tag tag) {
         Bundle args = new Bundle();
-        args.putParcelable("category",category);
+        args.putParcelable("category", category);
         TabFragment fragment = new TabFragment();
-        switch (tag){
+        switch (tag) {
             case HUYA:
                 fragment = new HuYaTabFragment();
                 break;
             case DOUYU:
                 fragment = new DouYuTabFragment();
                 break;
-            case YY:
+            case PANDA:
+                fragment = new PandaTabFragment();
                 break;
         }
         fragment.setArguments(args);

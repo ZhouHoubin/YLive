@@ -94,6 +94,9 @@ public class HuYaLiveActivity extends LiveActivity implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.exo_line:
+                if (multiLineInfo == null || multiLineInfo.size() == 0) {
+                    return;
+                }
                 AlertDialog.Builder lineBuilder = new AlertDialog.Builder(HuYaLiveActivity.this);
                 CharSequence[] lineItems = new CharSequence[multiLineInfo.size()];
                 for (int i = 0; i < multiLineInfo.size(); i++) {
@@ -117,6 +120,9 @@ public class HuYaLiveActivity extends LiveActivity implements View.OnClickListen
                 lineBuilder.show();
                 break;
             case R.id.exo_rate:
+                if (multiRateInfo == null || multiRateInfo.size() == 0) {
+                    return;
+                }
                 AlertDialog.Builder builder = new AlertDialog.Builder(HuYaLiveActivity.this);
                 CharSequence[] items = new CharSequence[multiRateInfo.size()];
                 for (int i = 0; i < multiRateInfo.size(); i++) {

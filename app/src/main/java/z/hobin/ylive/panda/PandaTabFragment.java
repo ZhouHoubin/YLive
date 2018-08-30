@@ -1,4 +1,4 @@
-package z.hobin.ylive.huya;
+package z.hobin.ylive.panda;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -28,11 +28,11 @@ import z.hobin.ylive.R;
 import z.hobin.ylive.TabFragment;
 import z.hobin.ylive.douyu.DouYuLiveActivity;
 
-public class HuYaTabFragment extends TabFragment {
+public class PandaTabFragment extends TabFragment {
     @Override
     protected void loadData(int page) {
         super.loadData(page);
-        String url = String.format(Locale.CHINA, "https://www.huya.com/cache.php?m=LiveList&do=getLiveListByPage&gameId=%d&tagAll=0&page=%d", category.id1, page);
+        String url = String.format(Locale.CHINA, "http://api.m.panda.tv/ajax_get_mobile4_live_list_by_cate?cate=%s&needFilterMachine=1&pageno=%d&pagenum=40&__plat=android&__version=4.0.18.7465&__channel=yingyongbao", category.shortName, page);
         OkHttpClient client = new OkHttpClient();
         Request.Builder builder = new Request.Builder().url(url).get();
         client.newCall(builder.build()).enqueue(new Callback() {
@@ -47,13 +47,16 @@ public class HuYaTabFragment extends TabFragment {
                 try {
                     JSONObject json = new JSONObject(data);
                     System.out.println(data);
-                    if (json.getInt("status") == 200) {
-                        JSONArray dataArray = json.getJSONObject("data").getJSONArray("datas");
+                    if (json.getInt("errno") == 0) {
+                        JSONArray dataArray = json.getJSONObject("data").getJSONArray("items");
+                        if (getActivity() == null) {
+                            return;
+                        }
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 RecAdapter adapter = new RecAdapter(dataArray);
-                                adapter.setOnItemClickListener(HuYaTabFragment.this);
+                                adapter.setOnItemClickListener(PandaTabFragment.this);
                                 recyclerView.setAdapter(adapter);
                             }
                         });
@@ -70,6 +73,13 @@ public class HuYaTabFragment extends TabFragment {
         private OnItemClickListener itemClickListener;
 
         public RecAdapter(JSONArray data) {
+            try {
+                if (data.getJSONObject(0).has("items")) {
+                    data.remove(0);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             this.data = data;
         }
 
@@ -79,37 +89,37 @@ public class HuYaTabFragment extends TabFragment {
 
         @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        public RecAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = View.inflate(parent.getContext(), R.layout.item_main, null);
-            return new ViewHolder(v);
+            return new RecAdapter.ViewHolder(v);
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull RecAdapter.ViewHolder holder, int position) {
             String screenshot = null;
             JSONObject itemData = null;
             try {
                 itemData = data.getJSONObject(position);
-                screenshot = itemData.getString("screenshot");
+                screenshot = itemData.getString("img");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
             String introduction = null;
             try {
-                introduction = itemData.getString("introduction");
+                introduction = itemData.getString("name");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
             String nick = null;
             try {
-                nick = itemData.getString("nick");
+                nick = itemData.getJSONObject("userinfo").getString("nickName");
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
             String count = null;
             try {
-                long totalCount = itemData.getLong("totalCount");
+                long totalCount = itemData.getInt("person_num");
                 if (totalCount < 10000) {
                     count = String.valueOf(totalCount);
                 } else {
@@ -164,7 +174,7 @@ public class HuYaTabFragment extends TabFragment {
         Object tag = view.getTag();
         if (tag != null && tag instanceof JSONObject) {
             JSONObject json = (JSONObject) tag;
-            Intent intent = new Intent(getActivity(), HuYaLiveActivity.class);
+            Intent intent = new Intent(getActivity(), PandaLiveActivity.class);
             intent.putExtra("data", json.toString());
             startActivity(intent);
         }

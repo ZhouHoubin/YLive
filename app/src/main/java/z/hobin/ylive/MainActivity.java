@@ -1,6 +1,8 @@
 package z.hobin.ylive;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -10,7 +12,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.nightonke.boommenu.BoomButtons.BoomButton;
 import com.nightonke.boommenu.BoomButtons.TextInsideCircleButton;
@@ -34,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog loadDialog;
     private TabLayout tableLayout;
     private ViewPager viewPager;
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,8 +75,8 @@ public class MainActivity extends AppCompatActivity {
 
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.huya).normalText("虎牙").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.douyu).normalText("斗鱼").isRound(false));
-        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.longzhu).normalText("龙珠").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.panda).normalText("熊猫").isRound(false));
+        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.longzhu).normalText("龙珠").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.quanmin).normalText("全民").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
@@ -110,16 +117,27 @@ public class MainActivity extends AppCompatActivity {
 
     private void loadData(int index) {
         AlertDialog.Builder loadBuilder = new AlertDialog.Builder(MainActivity.this);
+        loadBuilder.setTitle("");
         loadBuilder.setMessage("加载中.........");
         loadDialog = loadBuilder.show();
-        switch (index) {
-            case 0:
-                loadHuya();
-                break;
-            case 1:
-                loadDouyu();
-                break;
-        }
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                switch (index) {
+                    case 0://虎牙
+                        loadHuya();
+                        break;
+                    case 1://斗鱼
+                        loadDouyu();
+                        break;
+                    case 2://熊猫
+                        loadPanda();
+                        break;
+                    case 3:
+                        break;
+                }
+            }
+        }, 1000);
     }
 
     private void loadDouyu() {
@@ -167,6 +185,69 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                 } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+    private void loadPanda() {
+        tableLayout.removeAllTabs();
+        clearFragments();
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                String rawData = HttpUtils.sendGet("http://api.m.panda.tv/index.php?method=category.alllist", null);
+                try {
+                    JSONObject rootObject = new JSONObject(rawData);
+                    JSONArray dataArray = rootObject.getJSONArray("data");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<TabFragment> fragments = new ArrayList<>();
+                            for (int i = 0; i < dataArray.length(); i++) {
+                                JSONObject jsonObject = null;
+                                try {
+                                    jsonObject = dataArray.getJSONObject(i);
+                                    Category category = new Category();
+                                    category.name = jsonObject.getString("cname");
+                                    category.shortName = jsonObject.getString("ename");
+                                    category.icon = jsonObject.getString("img");
+                                    category.count = jsonObject.getInt("ext");
+                                    category.data = jsonObject;
+                                    fragments.add(Fragments.newInstance(category, Live.Tag.PANDA));
+
+                                    TextView textView = new TextView(getApplicationContext());
+                                    textView.setTextColor(Color.RED);
+                                    textView.setText(category.name);
+                                    tableLayout.addTab(tableLayout.newTab().setCustomView(textView));
+
+                                    JSONArray childArray = jsonObject.getJSONArray("child_data");
+                                    for (int j = 0; j < childArray.length(); j++) {
+                                        JSONObject childObject = childArray.getJSONObject(j);
+                                        Category childCategory = new Category();
+                                        childCategory.name = childObject.getString("cname");
+                                        childCategory.shortName = childObject.getString("ename");
+                                        childCategory.icon = childObject.getString("img");
+                                        childCategory.count = childObject.getInt("ext");
+                                        childCategory.data = childObject;
+                                        fragments.add(Fragments.newInstance(childCategory, Live.Tag.PANDA));
+                                        tableLayout.addTab(tableLayout.newTab().setText(childCategory.name));
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            viewPager.setAdapter(new TabAdapter(getSupportFragmentManager(), fragments));
+                            viewPager.setOffscreenPageLimit(fragments.size());
+                            viewPager.invalidate();
+                            if (loadDialog != null && loadDialog.isShowing()) {
+                                loadDialog.dismiss();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

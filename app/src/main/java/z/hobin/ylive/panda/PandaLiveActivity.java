@@ -1,4 +1,4 @@
-package z.hobin.ylive.douyu;
+package z.hobin.ylive.panda;
 
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
@@ -7,8 +7,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.ValueCallback;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -28,12 +31,13 @@ import z.hobin.ylive.LineInfo;
 import z.hobin.ylive.LiveActivity;
 import z.hobin.ylive.R;
 import z.hobin.ylive.RateInfo;
+import z.hobin.ylive.douyu.DouYu;
 import z.hobin.ylive.util.CircleImageTransformation;
 
 /**
- * 斗鱼播放
+ * 熊猫播放
  */
-public class DouYuLiveActivity extends LiveActivity implements View.OnClickListener {
+public class PandaLiveActivity extends LiveActivity implements View.OnClickListener {
     private JSONObject json;
     //房间ID
     private String roomId = null;
@@ -44,7 +48,7 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
     private int rateIndex = 1;
     //线路
     private int lineIndex = 0;
-    private DouYu douYu;
+    private Panda panda;
     //画质列表
     private List<RateInfo> multiRateInfo = new ArrayList<>();
     //线路列表
@@ -65,23 +69,23 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
         }
         try {
             TextView liveTitle = liveInfo.findViewById(R.id.live_title);
-            liveTitle.setText(json.getString("roomName"));
+            liveTitle.setText(json.getString("name"));
             TextView liveUser = liveInfo.findViewById(R.id.live_user);
-            liveUser.setText(json.getString("nickname"));
+            liveUser.setText(json.getJSONObject("userinfo").getString("nickName"));
             ImageView liveAvatar = liveInfo.findViewById(R.id.live_avatar);
-            Picasso.get().load(json.getString("avatar")).transform(new CircleImageTransformation()).into(liveAvatar);
+            Picasso.get().load(json.getJSONObject("userinfo").getString("avatar")).transform(new CircleImageTransformation()).into(liveAvatar);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
         try {
-            roomId = json.getString("rid");
+            roomId = json.getString("id");
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        roomUrl = "https://www.douyu.com/" + roomId;
-        h5RoomUrl = "https://m.douyu.com/" + roomId;
-        douYu = new DouYu(roomId);
+        roomUrl = "https://www.panda.tv/" + roomId;
+        h5RoomUrl = "https://m.panda.tv/room.html?roomid=" + roomId;
+        panda = new Panda(roomId);
         liveWeb.loadUrl(roomUrl);
         liveWeb.setWebViewClient(new WebViewClient());
 
@@ -93,10 +97,10 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
             @Override
             public void run() {
                 super.run();
-                douYu.load(roomUrl);
-                multiRateInfo = douYu.getMultiRateInfo();
-                multiLineInfo = douYu.getMultiLineInfo();
-                huyaLiveInfo = douYu.getLiveInfo();
+                panda.load(roomUrl);
+                multiRateInfo = panda.getMultiRateInfo();
+                multiLineInfo = panda.getMultiLineInfo();
+                huyaLiveInfo = panda.getLiveInfo();
                 play(0, 1);
             }
         }.start();
@@ -109,7 +113,7 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
                 if (multiLineInfo == null || multiLineInfo.size() == 0) {
                     return;
                 }
-                AlertDialog.Builder lineBuilder = new AlertDialog.Builder(DouYuLiveActivity.this);
+                AlertDialog.Builder lineBuilder = new AlertDialog.Builder(PandaLiveActivity.this);
                 CharSequence[] lineItems = new CharSequence[multiLineInfo.size()];
                 for (int i = 0; i < multiLineInfo.size(); i++) {
                     LineInfo lineInfo = multiLineInfo.get(i);
@@ -135,7 +139,7 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
                 if (multiRateInfo == null || multiRateInfo.size() == 0) {
                     return;
                 }
-                AlertDialog.Builder builder = new AlertDialog.Builder(DouYuLiveActivity.this);
+                AlertDialog.Builder builder = new AlertDialog.Builder(PandaLiveActivity.this);
                 CharSequence[] items = new CharSequence[multiRateInfo.size()];
                 for (int i = 0; i < multiRateInfo.size(); i++) {
                     RateInfo streamInfo = multiRateInfo.get(i);
@@ -191,12 +195,30 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
 
 
     protected class WebViewClient extends android.webkit.WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (url.startsWith("http")) {
+                return super.shouldOverrideUrlLoading(view, url);
+            } else {
+                return true;
+            }
+        }
+
+//        @Override
+//        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+//            String scheme = request.getUrl().getScheme();
+//            if (scheme.startsWith("http")) {
+//                return super.shouldOverrideUrlLoading(view, request);
+//            } else {
+//                return true;
+//            }
+//        }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
-            if (url.contains("m.douyu.com")) {
-                view.evaluateJavascript("$('.header').css('display','none');$('.l-tabs').css('margin','0px');$('.l-tabs').css('padding','0px');$('.l-video').css('display','none');$('.c-tabs-header').css('display','none');$('.c-tabs-content').css('top','0px');", new ValueCallback<String>() {
+            if (url.contains("m.panda.tv")) {
+                view.evaluateJavascript("$('.footer').css('display','none');$('#header').css('display','none');$('.room-matrix').css('display','none');$('.tabs-cnt').css('display','none');", new ValueCallback<String>() {
                     @Override
                     public void onReceiveValue(String value) {
                         handler.postDelayed(new Runnable() {
