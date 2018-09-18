@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -40,10 +41,6 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
     //房间地址
     private String roomUrl = null;
     private String h5RoomUrl = null;
-    //画质
-    private int rateIndex = 1;
-    //线路
-    private int lineIndex = 0;
     private DouYu douYu;
     //画质列表
     private List<RateInfo> multiRateInfo = new ArrayList<>();
@@ -82,13 +79,10 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
         roomUrl = "https://www.douyu.com/" + roomId;
         h5RoomUrl = "https://m.douyu.com/" + roomId;
         douYu = new DouYu(roomId);
-        liveWeb.loadUrl(roomUrl);
-        liveWeb.setWebViewClient(new WebViewClient());
 
         liveMobileWeb.loadUrl(h5RoomUrl);
         liveMobileWeb.setWebContentsDebuggingEnabled(true);
         liveMobileWeb.setWebViewClient(new WebViewClient());
-
         new Thread() {
             @Override
             public void run() {
@@ -104,6 +98,7 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
+        super.onClick(v);
         switch (v.getId()) {
             case R.id.exo_line:
                 if (multiLineInfo == null || multiLineInfo.size() == 0) {
@@ -157,31 +152,27 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
                 });
                 builder.show();
                 break;
-            case R.id.exo_full:
-                if (switchUtils.isPortrait()) {
-                    switchUtils.toggleScreen();
-                } else {
-                    switchUtils.toggleScreen();
-                }
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
-                break;
-            case R.id.exo_refersh:
-                play(lineIndex, rateIndex);
+            default:
                 break;
         }
     }
 
     protected void play(int line, int rate) {
-        String url = multiLineInfo.get(line).url;
-        if (rate != 0 && multiRateInfo != null) {
-            if (multiRateInfo.size() == 1) {
-                rate = 0;
-            }
-        }
-        System.out.println("===================\r\n" + url);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                if (multiRateInfo == null) {
+                    btnRate.setVisibility(View.GONE);
+                }
+
+                if (multiLineInfo == null) {
+                    btnLine.setVisibility(View.GONE);
+                    return;
+                }
+
+                String url = multiLineInfo.get(line).url;
+                System.out.println("===================\r\n" + url);
+
                 MediaSource videoSource = new ExtractorMediaSource(Uri.parse(url), dataSourceFactory, extractorsFactory, null, null);
                 player.prepare(videoSource);
                 player.setPlayWhenReady(true);
@@ -191,12 +182,35 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
 
 
     protected class WebViewClient extends android.webkit.WebViewClient {
+        private boolean isInsert;
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
             if (url.contains("m.douyu.com")) {
-                view.evaluateJavascript("$('.header').css('display','none');$('.l-tabs').css('margin','0px');$('.l-tabs').css('padding','0px');$('.l-video').css('display','none');$('.c-tabs-header').css('display','none');$('.c-tabs-content').css('top','0px');", new ValueCallback<String>() {
+                if (!isInsert) {
+                    view.evaluateJavascript("    var script = document.createElement('script');\n" +
+                            "    script.setAttribute(\"type\",\"text/javascript\");\n" +
+                            "    script.innerHTML = '\\tdocument.getElementsByClassName(\\'barrage-box\\')[0].addEventListener(\"DOMNodeInserted\",function(e){\\n' +\n" +
+                            "        '        var node = e.target;\\n' +\n" +
+                            "        '\\t\\t//文字\\n' +\n" +
+                            "        '\\t\\tvar nick = node.childNodes[0].innerText;\\n' +\n" +
+                            "        '\\t\\tvar text = node.childNodes[1];\\n' +\n" +
+                            "        '\\t\\tif(text.data.indexOf(\\'：\\')!==-1){\\n' +\n" +
+                            "        '\\t\\t\\ttext = text.data.replace(/：/,\\':\\');\\n' +\n" +
+                            "        '\\t\\t\\tconsole.log(\\'[\\'+nick+text+\\']\\');\\n' +\n" +
+                            "        '\\t\\t}\\n' +\n" +
+                            "        '    });';\n" +
+                            "    document.getElementsByTagName(\"head\")[0].appendChild(script);", new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String value) {
+
+                        }
+                    });
+                    isInsert = true;
+                }
+
+                view.evaluateJavascript("$('.c-operate').css('display','none');$('.header').css('display','none');$('.l-tabs').css('margin','0px');$('.l-tabs').css('padding','0px');$('.l-video').css('display','none');$('.c-tabs-header').css('display','none');$('.c-tabs-content').css('top','0px');", new ValueCallback<String>() {
                     @Override
                     public void onReceiveValue(String value) {
                         handler.postDelayed(new Runnable() {
@@ -207,8 +221,6 @@ public class DouYuLiveActivity extends LiveActivity implements View.OnClickListe
                         }, 1000);
                     }
                 });
-            } else {
-                //play(0, 1);
             }
         }
     }

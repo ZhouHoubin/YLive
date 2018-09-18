@@ -49,7 +49,7 @@ public class WindowUtil {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         hideActionBar((AppCompatActivity) activity);
-        hideNavi(activity);
+        //hideNavi(activity);
     }
 
     /**
@@ -61,7 +61,7 @@ public class WindowUtil {
         activity.getWindow().clearFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         showActionBar((AppCompatActivity) activity);
-        showNavi(activity);
+        //showNavi(activity);
     }
 
     public static void showNavi(Activity activity){

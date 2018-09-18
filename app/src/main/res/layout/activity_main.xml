@@ -54,8 +54,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_alignParentBottom="true"
-            app:bmb_buttonPlaceEnum="buttonPlace_sc_9_1"
-            app:bmb_piecePlaceEnum="piecePlace_dot_9_1" />
+            app:bmb_buttonPlaceEnum="buttonPlace_sc_6_1"
+            app:bmb_piecePlaceEnum="piecePlace_dot_6_1" />
     </RelativeLayout>
 
 

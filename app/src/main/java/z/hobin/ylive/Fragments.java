@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import z.hobin.ylive.douyu.DouYuTabFragment;
 import z.hobin.ylive.huya.HuYaTabFragment;
 import z.hobin.ylive.panda.PandaTabFragment;
+import z.hobin.ylive.quanming.QuanMinTabFragment;
 
 public class Fragments {
     public static TabFragment newInstance(JSONObject json) {
@@ -30,6 +31,9 @@ public class Fragments {
                 break;
             case PANDA:
                 fragment = new PandaTabFragment();
+                break;
+            case QUANMIN:
+                fragment = new QuanMinTabFragment();
                 break;
         }
         fragment.setArguments(args);

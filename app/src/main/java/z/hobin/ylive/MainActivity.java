@@ -35,7 +35,7 @@ import z.hobin.ylive.douyu.DouYu;
 import z.hobin.ylive.util.FileUtil;
 import z.hobin.ylive.util.HttpUtils;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private AlertDialog loadDialog;
     private TabLayout tableLayout;
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        loadData(0);
+        loadData(cache.getAsInteger("menu_index", 0));
 
         BoomMenuButton bmb = (BoomMenuButton) findViewById(R.id.bmb);
         bmb.setButtonEnum(ButtonEnum.TextInsideCircle);
@@ -79,12 +79,13 @@ public class MainActivity extends AppCompatActivity {
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.longzhu).normalText("龙珠").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.quanmin).normalText("全民").isRound(false));
         bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
-        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
-        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
-        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+//        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+//        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
+//        bmb.addBuilder(new TextInsideCircleButton.Builder().normalImageRes(R.drawable.yy).normalText("YY").isRound(false));
         bmb.setOnBoomListener(new OnBoomListener() {
             @Override
             public void onClicked(int index, BoomButton boomButton) {
+                cache.put("menu_index", String.valueOf(index));
                 loadData(index);
             }
 
@@ -133,11 +134,62 @@ public class MainActivity extends AppCompatActivity {
                     case 2://熊猫
                         loadPanda();
                         break;
-                    case 3:
+                    case 3://龙珠
+                        break;
+                    case 4://全民tv
+                        loadQuanMin();
                         break;
                 }
             }
         }, 1000);
+    }
+
+    private void loadQuanMin() {
+        tableLayout.removeAllTabs();
+        clearFragments();
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                String rawData = HttpUtils.sendGet("https://www.quanmin.tv/json/categories/list.json", null);
+                try {
+                    JSONArray jsonArray = new JSONArray(rawData);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<TabFragment> fragments = new ArrayList<>();
+                            for (int i = 0; i < jsonArray.length(); i++) {
+                                JSONObject jsonObject = null;
+                                try {
+                                    jsonObject = jsonArray.getJSONObject(i);
+                                    Category category = new Category();
+                                    category.id1 = jsonObject.getInt("id");
+                                    category.name = jsonObject.getString("name");
+                                    category.shortName = jsonObject.getString("slug");
+                                    category.pic = jsonObject.getString("image");
+                                    category.icon = jsonObject.getString("thumb");
+                                    category.smallIcon = jsonObject.getString("thumb");
+                                    category.data = jsonObject;
+                                    fragments.add(Fragments.newInstance(category, Live.Tag.QUANMIN));
+                                    tableLayout.addTab(tableLayout.newTab().setText(category.name));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                            //viewPager.setId((int) System.currentTimeMillis());
+                            viewPager.setAdapter(new TabAdapter(getSupportFragmentManager(), fragments));
+                            viewPager.setOffscreenPageLimit(fragments.size());
+                            viewPager.invalidate();
+                            if (loadDialog != null && loadDialog.isShowing()) {
+                                loadDialog.dismiss();
+                            }
+                        }
+                    });
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
     }
 
     private void loadDouyu() {

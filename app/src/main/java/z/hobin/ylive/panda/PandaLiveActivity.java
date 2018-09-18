@@ -7,11 +7,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
-import android.view.KeyEvent;
+import android.text.TextUtils;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -31,7 +30,6 @@ import z.hobin.ylive.LineInfo;
 import z.hobin.ylive.LiveActivity;
 import z.hobin.ylive.R;
 import z.hobin.ylive.RateInfo;
-import z.hobin.ylive.douyu.DouYu;
 import z.hobin.ylive.util.CircleImageTransformation;
 
 /**
@@ -108,6 +106,7 @@ public class PandaLiveActivity extends LiveActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
+        super.onClick(v);
         switch (v.getId()) {
             case R.id.exo_line:
                 if (multiLineInfo == null || multiLineInfo.size() == 0) {
@@ -175,18 +174,26 @@ public class PandaLiveActivity extends LiveActivity implements View.OnClickListe
         }
     }
 
+
     protected void play(int line, int rate) {
-        String url = multiLineInfo.get(line).url;
-        if (rate != 0 && multiRateInfo != null) {
+        if (rate != 0 && multiRateInfo != null && multiRateInfo.size() != 0) {
             if (multiRateInfo.size() == 1) {
                 rate = 0;
             }
         }
+        String url = multiLineInfo.get(line).url;
+        String rateString = multiRateInfo.get(rate).rateString;
+        if (TextUtils.isEmpty(rateString)) {
+            url = url.replace("@", "");
+        } else {
+            url = url.replace("@", "_" + rateString);
+        }
         System.out.println("===================\r\n" + url);
+        String url2 = url;
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                MediaSource videoSource = new ExtractorMediaSource(Uri.parse(url), dataSourceFactory, extractorsFactory, null, null);
+                MediaSource videoSource = new ExtractorMediaSource(Uri.parse(url2), dataSourceFactory, extractorsFactory, null, null);
                 player.prepare(videoSource);
                 player.setPlayWhenReady(true);
             }
@@ -195,6 +202,8 @@ public class PandaLiveActivity extends LiveActivity implements View.OnClickListe
 
 
     protected class WebViewClient extends android.webkit.WebViewClient {
+        private boolean isInsert;
+
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             if (url.startsWith("http")) {
@@ -204,21 +213,36 @@ public class PandaLiveActivity extends LiveActivity implements View.OnClickListe
             }
         }
 
-//        @Override
-//        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-//            String scheme = request.getUrl().getScheme();
-//            if (scheme.startsWith("http")) {
-//                return super.shouldOverrideUrlLoading(view, request);
-//            } else {
-//                return true;
-//            }
-//        }
-
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
             if (url.contains("m.panda.tv")) {
-                view.evaluateJavascript("$('.footer').css('display','none');$('#header').css('display','none');$('.room-matrix').css('display','none');$('.tabs-cnt').css('display','none');", new ValueCallback<String>() {
+                if (!isInsert) {
+                    isInsert = true;
+                    view.evaluateJavascript("    var script = document.createElement('script');\n" +
+                            "    script.setAttribute(\"type\",\"text/javascript\");\n" +
+                            "    script.innerHTML = 'window.onload = function(){\\n' +\n" +
+                            "        '\\t\\tdocument.querySelector(\\'div.chat-con>ul\\').addEventListener(\"DOMNodeInserted\",function(e){\\n' +\n" +
+                            "        '\\t\\t\\tvar node = e.target;\\n' +\n" +
+                            "        '\\t\\t\\tif(node !== undefined && node.nodeType == 1){\\n' +\n" +
+                            "        '\\t\\t\\t\\t //文字\\n' +\n" +
+                            "        '\\t\\t\\t\\tif(node.className.indexOf(\\'chat-item\\') !== -1){\\n' +\n" +
+                            "        '\\t\\t\\t\\t\\tvar nick = node.getElementsByClassName(\\'chat-user-name\\')[0].innerText;\\n' +\n" +
+                            "        '\\t\\t\\t\\t\\tvar text = node.getElementsByClassName(\\'chat-content\\')[0].innerText;\\n' +\n" +
+                            "        '\\t\\t\\t\\t\\tconsole.log(\\'[\\'+nick+text+\\']\\');\\t\\n' +\n" +
+                            "        '\\t\\t\\t\\t}\\n' +\n" +
+                            "        '\\t\\t\\t}\\n' +\n" +
+                            "        '\\t\\t});\\t\\n' +\n" +
+                            "        '\\t}\\t';\n" +
+                            "    document.getElementsByTagName(\"head\")[0].appendChild(script);", new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String value) {
+
+                        }
+                    });
+                }
+
+                view.evaluateJavascript("$('.footer').css('display','none');$('.chat-con').css('height','100%');$('#header').css('display','none');$('.room-matrix').css('display','none');$('.tabs-cnt').css('display','none');", new ValueCallback<String>() {
                     @Override
                     public void onReceiveValue(String value) {
                         handler.postDelayed(new Runnable() {
@@ -229,8 +253,6 @@ public class PandaLiveActivity extends LiveActivity implements View.OnClickListe
                         }, 1000);
                     }
                 });
-            } else {
-                //play(0, 1);
             }
         }
     }

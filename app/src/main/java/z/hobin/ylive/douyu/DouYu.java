@@ -37,22 +37,19 @@ public class DouYu implements BaseExtrator {
 
     @Override
     public void load(String value) {
-        String authstr = String.format(Locale.CHINA, "room/%s?aid=wp&client_sys=wp&time=%s", roomId, String.valueOf(System.currentTimeMillis()).substring(0, 10));
-
-        String authmd5 = FileUtil.md5((authstr + APPKEY));
-
-        String api_url = String.format(Locale.CHINA, "http://www.douyutv.com/api/v1/%s&auth=%s", authstr, authmd5);
-
-        String html = HttpUtils.sendGet(api_url, null);
-
         try {
-            JSONObject json = new JSONObject(html);
-            data = json;
-        } catch (JSONException e) {
+            String authstr = String.format(Locale.CHINA, "room/%s?aid=wp&client_sys=wp&time=%s", roomId, String.valueOf(System.currentTimeMillis()).substring(0, 10));
+
+            String authmd5 = FileUtil.md5((authstr + APPKEY));
+
+            String api_url = String.format(Locale.CHINA, "http://www.douyutv.com/api/v1/%s&auth=%s", authstr, authmd5);
+
+            String html = HttpUtils.sendGet(api_url, null);
+
+            data = new JSONObject(html);
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
-        System.out.println(api_url);
     }
 
     @Override
@@ -60,38 +57,31 @@ public class DouYu implements BaseExtrator {
         return null;
     }
 
-    private String getRtmp(int rate) {
-        String rtmp_url = "";
-        try {
-            //http://hdl1a.douyucdn.cn/live/606118r8d0VtIzy3_900.flv?wsAuth=c496426466e42e2cc6c86466aa5fc4ad&token=app-wp-0-606118-1d4dd5414ad5da0c8c67f1fe983b3d70&logo=0&expire=0&pt=1
-            JSONObject stream = data.getJSONObject("data").getJSONObject("rtmp_multi_bitrate");
-            rtmp_url = data.getJSONObject("data").getString("rtmp_url");
-            if (rate == 0) {
-                rtmp_url += "/" + stream.getString("middle");
-            } else if (rate == 1) {
-                rtmp_url += "/" + stream.getString("middle2");
-            } else {
-                rtmp_url += "/" + stream.getString("middle");
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return rtmp_url;
-    }
-
     @Override
     public List<LineInfo> getMultiLineInfo() {
         List<LineInfo> streamInfoList = new ArrayList<>();
         try {
-            JSONArray cdnsWithName = data.getJSONObject("data").getJSONArray("cdnsWithName");
-            for (int i = 0; i < cdnsWithName.length(); i++) {
-                JSONObject item = cdnsWithName.getJSONObject(i);
-                LineInfo lineInfo = new LineInfo();
-                lineInfo.data = item;
-                lineInfo.title = item.getString("name");
-                lineInfo.url = getRtmp(1);
-                streamInfoList.add(lineInfo);
-            }
+            JSONObject data2 = data.getJSONObject("data");
+            String rtmpUrl = data2.getString("rtmp_url");
+
+            LineInfo lineInfo1 = new LineInfo();
+            lineInfo1.title = "线路1";
+            lineInfo1.url = rtmpUrl + "/" + data2.getString("rtmp_live");
+            streamInfoList.add(lineInfo1);
+
+            //LineInfo lineInfo2 = new LineInfo();
+            //lineInfo2.title = "线路2";
+            //lineInfo2.url = data2.getString("hls_url");
+
+            LineInfo lineInfo2 = new LineInfo();
+            lineInfo2.title = "线路2";
+            lineInfo2.url = rtmpUrl + "/" + data2.getJSONObject("rtmp_multi_bitrate").getString("middle2");
+            streamInfoList.add(lineInfo2);
+
+            LineInfo lineInfo3 = new LineInfo();
+            lineInfo3.title = "线路3";
+            lineInfo3.url = rtmpUrl + "/" + data2.getJSONObject("rtmp_multi_bitrate").getString("middle");
+            streamInfoList.add(lineInfo3);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -56,6 +56,7 @@ public class Panda implements BaseExtrator {
     public List<RateInfo> getMultiRateInfo() {
         try {
             JSONObject stream_addr = data.getJSONObject("videoinfo").getJSONObject("stream_addr");
+            int cdnRate = Integer.parseInt(data.getJSONObject("videoinfo").getString("cdn_rate"));
             List<RateInfo> rateInfoList = new ArrayList<>();
             if (stream_addr.has("HD") && stream_addr.getInt("HD") == 1) {
                 RateInfo rateInfo = new RateInfo();
@@ -66,7 +67,10 @@ public class Panda implements BaseExtrator {
             if (stream_addr.has("SD") && stream_addr.getInt("SD") == 1) {
                 RateInfo rateInfo = new RateInfo();
                 rateInfo.name = "超清";
-                rateInfo.rateString = "3000";
+                if (cdnRate >= 3000) {
+                    rateInfo.rateString = "3000";
+                    rateInfo.name = "超清3M";
+                }
                 rateInfoList.add(rateInfo);
             }
             if (stream_addr.has("OD") && stream_addr.getInt("OD") == 1) {
@@ -76,12 +80,19 @@ public class Panda implements BaseExtrator {
             }
             if (stream_addr.has("LD_S") && stream_addr.getInt("LD_S") == 1) {
                 RateInfo rateInfo = new RateInfo();
-                rateInfo.name = "流畅";
+                rateInfo.name = "蓝光1";
+                if (cdnRate >= 3800) {
+                    rateInfo.rateString = "4000";
+                    rateInfo.name = "蓝光4M";
+                }
                 rateInfoList.add(rateInfo);
             }
-            if (stream_addr.has("LD_S") && stream_addr.getInt("LD_H") == 1) {
+            if (stream_addr.has("LD_H") && stream_addr.getInt("LD_H") == 1) {
                 RateInfo rateInfo = new RateInfo();
-                rateInfo.name = "普清";
+                rateInfo.name = "蓝光2";
+                if (cdnRate >= 4800) {
+                    rateInfo.name = "蓝光5M";
+                }
                 rateInfoList.add(rateInfo);
             }
             return rateInfoList;
@@ -108,7 +119,7 @@ public class Panda implements BaseExtrator {
 
             if (plflagList.has("main")) {
                 LineInfo mainLineInfo = new LineInfo();
-                String url = String.format(Locale.CHINA, "http://pl%s.live.panda.tv/live_panda/%s.flv?sign=%s&ts=%s&rid=%s", plflag, roomKey, sign, time, rid);
+                String url = String.format(Locale.CHINA, "http://pl%s.live.panda.tv/live_panda/%s@.flv?sign=%s&ts=%s&rid=%s", plflag, roomKey, sign, time, rid);
                 mainLineInfo.title = "主线路";
                 mainLineInfo.url = url;
                 streamInfoList.add(mainLineInfo);
@@ -120,7 +131,7 @@ public class Panda implements BaseExtrator {
                 plflag = backUpData.split("_")[1];
 
                 LineInfo mainLineInfo = new LineInfo();
-                String url = String.format(Locale.CHINA, "http://pl%s.live.panda.tv/live_panda/%s.flv?sign=%s&ts=%s&rid=%s", plflag, roomKey, sign, time, rid);
+                String url = String.format(Locale.CHINA, "http://pl%s.live.panda.tv/live_panda/%s@.flv?sign=%s&ts=%s&rid=%s", plflag, roomKey, sign, time, rid);
                 mainLineInfo.title = "备用线路" + (i + 1);
                 mainLineInfo.url = url;
                 streamInfoList.add(mainLineInfo);

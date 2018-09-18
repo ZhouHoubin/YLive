@@ -7,7 +7,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -92,6 +94,7 @@ public class HuYaLiveActivity extends LiveActivity implements View.OnClickListen
 
     @Override
     public void onClick(View v) {
+        super.onClick(v);
         switch (v.getId()) {
             case R.id.exo_line:
                 if (multiLineInfo == null || multiLineInfo.size() == 0) {
@@ -160,6 +163,9 @@ public class HuYaLiveActivity extends LiveActivity implements View.OnClickListen
     }
 
     protected void play(int line, int rate) {
+        if (multiLineInfo == null || multiLineInfo.size() == 0) {
+            return;
+        }
         String url = multiLineInfo.get(line).url;
         if (rate != 0) {
             if (multiRateInfo.size() == 1) {
@@ -182,12 +188,38 @@ public class HuYaLiveActivity extends LiveActivity implements View.OnClickListen
 
 
     protected class WebViewClient extends android.webkit.WebViewClient {
+        private boolean isInsert;
 
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
             if (url.contains("m.huya.com")) {
-                view.evaluateJavascript("$('#chatArea').css('width','100%');$('#chatArea').css('height','100%');$('#chatArea').css('top','0');$('#chatArea').css('position','fixed');$('.huya-header').css('display','none');$('.live-wrap').css('display','none');$('.live-info-btn').css('display','none');$('#m-container').attr('style','padding-top:0;');$('#m-container > div.live_tab').css('height','0');", new ValueCallback<String>() {
+                if (!isInsert) {
+                    view.evaluateJavascript("    var script = document.createElement('script');\n" +
+                            "    script.setAttribute(\"type\",\"text/javascript\");\n" +
+                            "    script.innerHTML = 'document.getElementsByClassName(\\'tanmu_scroll\\')[0].addEventListener(\"DOMNodeInserted\",function(e){\\n' +\n" +
+                            "        '        var node = e.target;\\n' +\n" +
+                            "        '\\t\\tif(node.className == \\'prop\\'){\\n' +\n" +
+                            "        '\\t\\t\\t//礼物\\n' +\n" +
+                            "        '\\t\\t\\tconsole.log(\\'[\\'+node.innerText+\\']\\');\\n' +\n" +
+                            "        '\\t\\t}else if(node.className == \\'normal\\'){\\n' +\n" +
+                            "        '\\t\\t\\t//文字\\n' +\n" +
+                            "        '\\t\\t\\tvar nick = node.childNodes[0].innerText;\\n' +\n" +
+                            "        '\\t\\t\\tvar text = node.childNodes[1];\\n' +\n" +
+                            "        '\\t\\t\\tconsole.log(\\'[\\'+nick+\\':\\'+text.data+\\']\\');\\n' +\n" +
+                            "        '\\t\\t}\\n' +\n" +
+                            "        '       \\n' +\n" +
+                            "        '    });';\n" +
+                            "    document.getElementsByTagName(\"head\")[0].appendChild(script);", new ValueCallback<String>() {
+                        @Override
+                        public void onReceiveValue(String value) {
+
+                        }
+                    });
+                    isInsert = true;
+                }
+
+                view.evaluateJavascript("$('#chatArea').css('width','100%');$('#chatArea').css('height','100%');$('#chatArea').css('top','0');$('#chatArea').css('position','fixed');$('.huya-header').css('display','none');$('.live-wrap').css('display','none');$('.live-info-btn').css('display','none');$('#m-container').attr('style','padding-top:0;');$('#m-container > div.live_tab').css('height','0');$('#m-container > div.live_tab').css('display','none');", new ValueCallback<String>() {
                     @Override
                     public void onReceiveValue(String value) {
                         handler.postDelayed(new Runnable() {

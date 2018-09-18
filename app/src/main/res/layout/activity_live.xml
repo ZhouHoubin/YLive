@@ -6,14 +6,24 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.google.android.exoplayer2.ui.SimpleExoPlayerView
-        android:id="@+id/videoView"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/dp_200"
-        android:layout_margin="0dp"
-        android:padding="0dp"
-        app:controller_layout_id="@layout/exo_playback_control_view"
-        app:resize_mode="fill" />
+        android:layout_height="wrap_content">
+
+        <com.google.android.exoplayer2.ui.SimpleExoPlayerView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_200"
+            android:layout_margin="0dp"
+            android:padding="0dp"
+            app:controller_layout_id="@layout/exo_playback_control_view"
+            app:resize_mode="fill" />
+
+        <master.flame.danmaku.ui.widget.DanmakuView
+            android:id="@+id/danmaku_view"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/dp_200" />
+    </RelativeLayout>
 
     <LinearLayout
         android:id="@+id/live_info"
@@ -55,9 +65,9 @@
                 android:id="@+id/live_user"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
                 android:layout_marginStart="10dp"
                 android:layout_toEndOf="@id/live_avatar"
-                android:layout_centerVertical="true"
                 tools:text="英雄联盟官方赛事" />
         </RelativeLayout>
 
